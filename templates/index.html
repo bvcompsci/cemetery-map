@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link rel="stylesheet" href="{{url_for('static', filename='css/map.css')}}">
+<script src="https://maps.googleapis.com/maps/api/js"></script>
+</head>
+
+<body>
+<div class="container">
+  <div id="hdr-row" class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+    <img id="logo" src="{{url_for('static', filename='images/sl-cem-logo.png')}}">
+    </div>
+
+    <div class="btn-toolbar col-xs-12 col-sm-12 col-md-12 col-lg-12">
+
+      <div class="btn-group col-xs-12 col-sm-12 col-md-12 col-lg-12">
+        <button type="button" class="btn btn-default" id="reset-btn">
+          Reset
+        </button>
+        <button type="button" id="search-btn" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+          Search <span class="caret"></span>
+        </button>
+        <div class="dropdown-menu" role="menu">
+          <form>
+            <p>Search for a loved one by entering information into any of the following fields.</p>
+            <p>First Name: <input id="first_name" type="text"></p>
+            <p>Last Name: <input id="last_name" type="text"></p>
+            <p>Place of Birth: <input id="birth_place" type="text"></p>
+            <p>Year of Birth: <input id="birth_date" type="text"></p>
+            <p>Place of Death: <input id="death_place" type="text"></p>
+            <p>Year of Death: <input id="death_date" type="text"></p>
+            <p>Owner of Lot: <input id="lot_owner" type="text"></p>
+            <p id="error-message"></p>
+            <input id="do-search-btn" type="button" value="Find" />
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="row">
+    <div id="googleMap" style="height:450px;"></div>
+  </div>
+
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script src="{{url_for('static', filename='js/map.js')}}"></script>
+</body>
+
+</html> 
