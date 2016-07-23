@@ -31,6 +31,4 @@ python3 manage.py runserver
 ## Contributing
 
 BVU students interested in contributing should write code that conforms to the
-[PEP8](http://www.pep8.org) coding standards.  Developers are encouraged to use
-GitHub's fork/pull request mechanism for contributing to this repository.
-
+[PEP8](https://www.python.org/dev/peps/pep-0008/) coding standards.  Developers are encouraged to use GitHub's fork/pull request mechanism for contributing to this repository.

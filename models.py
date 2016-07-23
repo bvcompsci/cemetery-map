@@ -48,9 +48,10 @@ class BurialJSONEncoder(JSONEncoder):
         return d
 
 
-def get_burials(columns_dict):
+def get_burials(columns_dict={}):
     """Retrieves burials matching the given dictionary criteria.
-    If an empty dictionary is given, all burials will be returned.
+    If no arguments or an empty dictionary is given, all burials will
+    be returned.
     """
     q = Burial.query
     for attr, value, in columns_dict.items():
@@ -85,6 +86,13 @@ def get_headstone(id):
 def set_headstone(id, hsfilename):
     burial = get_burial(id)
     burial.headstone = hsfilename
+    db.session.commit()
+
+
+def set_latlng(id, lat, lng):
+    burial = get_burial(id)
+    burial.lat = lat
+    burial.lng = lng
     db.session.commit()
 
 
