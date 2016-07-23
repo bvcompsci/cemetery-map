@@ -21,7 +21,7 @@ app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
 from models import Burial, BurialJSONEncoder, get_burials, get_burial, \
-    add_burial, remove_all_burials, get_headstone, set_headstone
+    add_burial, remove_all_burials, get_headstone, set_headstone, set_latlng
 
 
 def allowed_image_file(filename):
@@ -129,7 +129,7 @@ def headstone_upload(id):
 @app.route('/api/data', methods=['GET'])
 def database_download():
     """Retrieves a CSV file containing all database data.
-    
+
     In a future version, this REST endpoint will retrieves a
     ZIP file containing a CSV of all database data
     and all headstone image files.
@@ -145,11 +145,11 @@ def database_download():
     with open(pathname, 'w') as csv_file:
         csv_file.write( \
             'id,sd_type,sd,lot,space,lot_owner,year_purch,first_name,' +
-            'last_name,sex,birth_date,birth_place,death_date,age,' + 
+            'last_name,sex,birth_date,birth_place,death_date,age,' +
             'death_place,death_cause,burial_date,notes,more_notes,' +
             'hidden_notes,lat,lng\n' )
 
-        burials = get_burials({})
+        burials = get_burials()
 
         for burial in burials:
             csv_file.write(str(burial.id)+',')
@@ -181,7 +181,7 @@ def database_download():
 @app.route('/api/data', methods=['POST'])
 def database_upload():
     """Reloads all application data from a CSV file.
-    
+
     In a future version, this REST endpoint will reload all
     # application data from a ZIP file containing
     a CSV of all database data and all headstone images.
@@ -233,16 +233,68 @@ def database_upload():
     return 'ok - %d burials loaded' % len(lines)
 
 
+@app.route('/api/burial-summary', methods=['GET'])
+def burial_summary():
+    """This REST endpoint is used by the Android camera app 'cemetery-cam'
+    to retrieve a subset of burial information for all burials
+    in the cemetery.  This subset is represented by a JSON array objects
+
+        {
+            id: ID,
+            first_name: FNAME,
+            last_name: LNAME,
+            birth_date: BDATE,
+            death_date : DDATE
+        }
+
+    where the CAPS strings represent the actual values returned.  Only actual
+    burials are returned, not owned plots without an actual burial.  Callers
+    can expect the burials to be alphabetized by last_name.
+
+    This information is used by the camera app to select a burial prior to
+    filling in its headstone photo and latitude/longitude.  The headstone photo
+    and latitude/longitude get uploaded using the /api/update-burial REST URL.
+    """
+    try:
+        burials = get_burials()
+        burials_less = []
+        for burial in burials:
+            burials_less.append( {
+                'id': burial.id,
+                'first_name': burial.first_name,
+                'last_name': burial.last_name,
+                'birth_date': burial.birth_date,
+                'death_date': burial.death_date,
+            })
+
+        burials_less = sorted( \
+            list(filter(lambda b: b['last_name'] != "", burials_less)), \
+            key=lambda b: b['last_name'])
+
+        js = json.dumps(burials_less, cls=BurialJSONEncoder)
+        resp = Response(js, status=200, mimetype='application/json')
+        return resp
+    except Exception as e:
+        return ERR_GENERAL
+
+
+@app.route('/api/update-burial', methods=['POST'])
+def update_burial():
+    """This REST endpoint is used by the Android camera app 'cemetery-cam'
+    to update the latitude, longitude, and headstone image given a certain
+    burial ID.
+    """
+    set_latlng(request.form['id'], request.form['lat'], request.form['lng'])
+    headstone_upload(request.form['id'])
+    return 'ok'
+
+
 from models import make_dummy_data
 
 @app.route('/api/add-test-latlng', methods=['GET', 'POST'])
 def add_test_data():
     make_dummy_data()
     return 'ok'
-
-
-#GET /api/burial-summary
-#POST /api/update-burial
 
 
 if __name__ == '__main__':
