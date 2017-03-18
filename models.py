@@ -5,9 +5,9 @@ from json import JSONEncoder
 class Burial(db.Model):
     __tablename__ = 'burials'
 
-    # Most columns are strings -- even dates -- because
-    # city data is free-form in cases where dates are fuzzy,
-    # e.g., '1960?'.
+    # Most columns are strings--even dates--because a city's data
+    # is often free-form in cases where dates are fuzzy,
+    # e.g., '1960?' (note the question mark).
     id = db.Column(db.Integer, primary_key=True)
     sd_type = db.Column(db.String())
     sd = db.Column(db.String())
@@ -30,11 +30,25 @@ class Burial(db.Model):
     hidden_notes = db.Column(db.String())
     lat = db.Column(db.Float())
     lng = db.Column(db.Float())
-    headstone = db.Column(db.String())
+
 
     def __repr__(self):
         return '<burial id=%d, last_name=%s, first_name=%s ...>' % \
             (self.id, self.last_name, self.first_name)
+
+
+class BurialImage(db.Model):
+    __tablename__ = 'burial_images'
+
+    id = db.Column(db.Integer, primary_key=True)
+    burial_id = db.Column(db.Integer, db.ForeignKey('burials.id'))
+    burial = db.relationship('Burial', \
+        backref=db.backref('burial_images', lazy='dynamic'))
+    # Depending on deployment environment, we may choose to store images in the
+    # filesystem or in the DB.  We will maintain columns for both and then rely
+    # on the Flask app config object to tell us which we should use.
+    filename = db.Column(db.String())
+    data = db.Column(db.LargeBinary)
 
 
 class BurialJSONEncoder(JSONEncoder):
@@ -72,25 +86,27 @@ def add_burial(columns_dict):
 
 def remove_all_burials():
     Burial.query.delete()
+    BurialImage.query.delete()
     db.session.commit()
     db.engine.execute('alter sequence burials_id_seq RESTART with 1')
+    db.engine.execute('alter sequence burial_images_id_seq RESTART with 1')
 
 
-def get_headstone(id):
-    burial = get_burial(id)
-    if burial:
-        return burial.headstone
-    return None
+def get_burial_images(burial_id):
+    return BurialImage.query.filter(BurialImage.burial_id == burial_id).all()
 
 
-def set_headstone(id, hsfilename):
-    burial = get_burial(id)
-    burial.headstone = hsfilename
+def add_burial_image(burial_id, filename, data):
+    bi = BurialImage()
+    bi.burial_id = burial_id
+    bi.filename = filename
+    bi.data = data
+    db.session.add(bi)
     db.session.commit()
 
 
-def set_latlng(id, lat, lng):
-    burial = get_burial(id)
+def set_latlng(the_id, lat, lng):
+    burial = get_burial(the_id)
     burial.lat = lat
     burial.lng = lng
     db.session.commit()
