@@ -1,17 +1,19 @@
-from flask import Flask, render_template, request, json, Response, redirect
+from flask import abort, Flask, json, redirect, \
+                    render_template, request, Response, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.utils import secure_filename
 from errors import *
 import os
+import random
+import string
 
 
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-
 
 
 UPLOAD_FOLDER = 'static/images/headstone'
@@ -24,13 +26,19 @@ app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
 from models import Burial, BurialJSONEncoder, get_burials, get_burial, \
-    add_burial, remove_all_burials, get_headstone, set_headstone, set_latlng
+    add_burial, remove_all_burials, get_burial_images, add_burial_image, \
+    set_latlng
 
 class BurialModelView(ModelView):
     column_searchable_list = (Burial.last_name, Burial.first_name, \
         Burial.lot_owner, Burial.sd_type, Burial.sd, Burial.lot, Burial.space)
 admin = Admin(app, name='cemetery-map', template_mode='bootstrap3')
 admin.add_view(BurialModelView(Burial, db.session))
+
+
+def randstr():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) \
+                for _ in range(30))
 
 
 def allowed_image_file(filename):
@@ -72,15 +80,17 @@ def split_csv_line(line):
 
 @app.route('/')
 def index():
-    """Downloads the initial map page.
-    """
+    '''Downloads the initial map page.
+    '''
     return render_template('index.html')
 
 
 @app.route('/api/search', methods=['GET', 'POST'])
 def search():
-    """Returns a JSON list of matching burials.
-    """
+    '''Returns a JSON list of matching burials or an error string on failure.
+    If no form key/value pairs are specified, *ALL* burials are returned.
+    This includes purchased plots that do not yet have a burial.
+    '''
     try:
         js = json.dumps(get_burials(request.form), cls=BurialJSONEncoder)
         resp = Response(js, status=200, mimetype='application/json')
@@ -89,60 +99,101 @@ def search():
         return ERR_GENERAL
 
 
-@app.route('/api/headstone/<int:id>', methods=['GET'])
-def headstone_download(id):
-    hsfilename = get_headstone(id)
-    if hsfilename:
+@app.route('/api/headstone/<int:burial_id>/<int:image_id>', methods=['GET'])
+def download_image(burial_id, image_id):
+    '''Retrieves image corresponding to the burial ID provided in the URL.
+    This URL will most likely be specified in HTML as the 'src' attribute
+    of an 'img' tag.
+    '''
+
+    target = app.config['HS_IMAGE_TARGET']
+    burial_images = get_burial_images(burial_id)
+    if target == 'file':
         return redirect( \
-                os.path.join(app.config['UPLOAD_FOLDER'], hsfilename), \
-                code=302)
-    else:
-        return redirect( \
-                os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
-                code=302)
+            #os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
+            os.path.join(app.config['UPLOAD_FOLDER'], \
+                         burial_images[image_id].filename), \
+            code=302)
+    elif target == 'db':
+        return app.response_class(burial_images[image_id].data, \
+                                    mimetype='application/octet-stream')
 
 
-@app.route('/api/headstone/<int:id>', methods=['POST'])
-def headstone_upload(id):
-    """Given an HTML form with enctype=multipart/form-data and an input
+@app.route('/api/headstone/none', methods=['GET'])
+def no_image():
+    return redirect( \
+            os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
+            code=302)
+
+
+@app.route('/api/headstones/<int:burial_id>', methods=['GET'])
+def images_iframe_content(burial_id):
+    html = ''
+    burial_images = get_burial_images(burial_id)
+    if len(burial_images) == 0:
+        return '<img style="width: 200px;" src="' \
+              + url_for('no_image') \
+              + '"><br>'
+    for k in range(len(burial_images)):
+        html += '<img style="width: 200px;" src="' \
+              + url_for('download_image', burial_id=burial_id, image_id=k) \
+              + '"><br>'
+    return html
+
+
+@app.route('/api/headstone/<int:burial_id>', methods=['POST'])
+def upload_image(burial_id):
+    '''Given an HTML form with enctype=multipart/form-data and an input
     type=file, this REST endpoint places a headstone image file into
     the upload folder UPLOAD_FOLDER and then updates the database
     with the new filename.
-    """
 
-    if not get_burial(id):
+    This function is typically called directly by another route, such as
+    POST /api/update-burial.
+    '''
+
+    if not get_burial(burial_id):
         return ERR_NO_SUCH_BURIAL
 
     try:
         if 'file' not in request.files:
             return ERR_NO_FILE_SPECIFIED
-        file = request.files['file']
-        if file.filename == '':
+        infile = request.files['file']
+        if infile.filename == '':
             return ERR_NO_FILE_SPECIFIED
-        if file and allowed_image_file(file.filename):
-            filename = secure_filename(file.filename)
+
+        target = app.config['HS_IMAGE_TARGET']
+        if infile and allowed_image_file(infile.filename):
+            filename = secure_filename(infile.filename)
             suffix = filename[filename.rindex('.'):]
-            hsfilename = 'hs-' + str(id) + suffix
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], hsfilename)
-            file.save(filepath)
+            filename = 'hs-' + randstr() + '-' + str(burial_id) + suffix
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+            add_burial_image( \
+                burial_id, \
+                filename if target == 'file' else None, \
+                infile.read() if target == 'db' else None)
+
+            if target == 'file':
+                infile.save(filepath)
         else:
             return ERR_NOT_IMAGE
     except Exception as e:
+        print('Error: {}'.format(str(e)))
         return ERR_GENERAL
-
-    set_headstone(id, hsfilename)
 
     return 'ok'
 
 
 @app.route('/api/data', methods=['GET'])
 def database_download():
-    """Retrieves a CSV file containing all database data.
+    '''Retrieves a CSV file containing all database data.  The filename
+    will contain the date on which the request was completed.
 
     In a future version, this REST endpoint will retrieves a
     ZIP file containing a CSV of all database data
     and all headstone image files.
-    """
+    '''
 
     if not os.path.isdir(app.config['DOWNLOAD_FOLDER']):
         os.mkdir(app.config['DOWNLOAD_FOLDER'])
@@ -187,17 +238,31 @@ def database_download():
     return redirect(pathname, code=302)
 
 
+@app.route('/api/data', methods=['DELETE'])
+def database_nuke():
+    '''Nukes all data in the DB.  This route is only available in
+    Development, not in Test or Production.
+    '''
+    if 'DEVELOPMENT' in app.config:
+        remove_all_burials()
+        return 'ok'
+    else:
+        abort(404)
+
+
 @app.route('/api/data', methods=['POST'])
 def database_upload():
-    """Reloads all application data from a CSV file.
+    '''Reloads all application data from a CSV file.  CSV file should be
+    sent as form-data using the key 'file'.
 
     In a future version, this REST endpoint will reload all
-    # application data from a ZIP file containing
+    application data from a ZIP file containing
     a CSV of all database data and all headstone images.
-    """
+    '''
 
     if 'file' not in request.files:
         return ERR_NO_FILE_SPECIFIED
+
     file = request.files['file']
     if file.filename == '':
         return ERR_NO_FILE_SPECIFIED
@@ -212,10 +277,14 @@ def database_upload():
         with codecs.open(filename, 'r', encoding='utf-8', \
             errors='ignore') as csv_file:
 
+            # Assume there's a header line and ignore it.
             lines = csv_file.readlines()[1:]
+
+            # Add a burial DB row for each line in the CSV file.
+            # ID columns in the CSV file are ignored.
             for line in lines:
                 col_values = split_csv_line(line)
-                add_burial( {
+                add_burial({
                     'sd_type' : col_values[1],
                     'sd' : col_values[2],
                     'lot' : col_values[3],
@@ -237,14 +306,14 @@ def database_upload():
                     'hidden_notes' : col_values[19],
                     'lat' : col_values[20],
                     'lng' : col_values[21],
-                } )
+                })
 
     return 'ok - %d burials loaded' % len(lines)
 
 
 @app.route('/api/burial-summary', methods=['GET'])
 def burial_summary():
-    """This REST endpoint is used by the Android camera app 'cemetery-cam'
+    '''This REST endpoint is used by the Android camera app 'cemetery-cam'
     to retrieve a subset of burial information for all burials
     in the cemetery.  This subset is represented by a JSON array objects
 
@@ -257,18 +326,20 @@ def burial_summary():
         }
 
     where the CAPS strings represent the actual values returned.  Only actual
-    burials are returned, not owned plots without an actual burial.  Callers
-    can expect the burials to be alphabetized by last_name.
+    burials are returned.  Plots without an actual burial are excluded from
+    the returned list.  Callers can expect the burials to be alphabetized by
+    last_name.
 
     This information is used by the camera app to select a burial prior to
     filling in its headstone photo and latitude/longitude.  The headstone photo
-    and latitude/longitude get uploaded using the /api/update-burial REST URL.
-    """
+    and latitude/longitude get uploaded using the POST /api/update-burial REST
+    endpoint.
+    '''
     try:
         burials = get_burials()
         burials_less = []
         for burial in burials:
-            burials_less.append( {
+            burials_less.append({
                 'id': burial.id,
                 'first_name': burial.first_name,
                 'last_name': burial.last_name,
@@ -289,12 +360,12 @@ def burial_summary():
 
 @app.route('/api/update-burial', methods=['POST'])
 def update_burial():
-    """This REST endpoint is used by the Android camera app 'cemetery-cam'
+    '''This REST endpoint is used by the Android camera app 'cemetery-cam'
     to update the latitude, longitude, and headstone image given a certain
     burial ID.
-    """
+    '''
     set_latlng(request.form['id'], request.form['lat'], request.form['lng'])
-    headstone_upload(request.form['id'])
+    upload_image(request.form['id'])
     return 'ok'
 
 

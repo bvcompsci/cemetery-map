@@ -125,18 +125,18 @@ function openInfowindow(marker) {
                         + 'update our site.  Thank you.');
   } else {
     var content = "<h4>" + marker.first_name + " " + marker.last_name + "</h4>"
-                + "<br/><img style=\"width: 200px;\" src=\"/api/headstone/"
-                      + marker.id + "\" /><br/>"
+                + "<iframe src=\"/api/headstones/" + marker.id + "\"></iframe>"
+                + "<br>"
                 + "<strong>Born Date:</strong> " + san(marker.birth_date)
-                + "<br/>"
+                + "<br>"
                 + "<strong>Born Place:</strong> " + san(marker.birth_place)
-                + "<br/>"
+                + "<br>"
                 + "<strong>Death Date:</strong> " + san(marker.death_date)
-                + "<br/>"
+                + "<br>"
                 + "<strong>Death Place:</strong> " + san(marker.death_place)
-                + "<br/>"
+                + "<br>"
                 + "<strong>Burial Date:</strong> " + san(marker.burial_date)
-                + "<br/>"
+                + "<br>"
                 + "<strong>Lot Owner:</strong> " + san(marker.lot_owner);
     infowindow.setContent(content);
   }
@@ -172,7 +172,7 @@ function makeBurialMarker(burial) {
   marker.more_notes =    burial.more_notes;
   marker.hidden_notes =  burial.hidden_notes;
   marker.lat =           burial.lat;
-  marker.lng =           burial.lng;           
+  marker.lng =           burial.lng;
 
   google.maps.event.addListener(marker, 'click', function(evt) {
       openInfowindow(this);
@@ -234,11 +234,9 @@ $(document).ready(function() {
 /*
     $('.btn-group').on('show.bs.dropdown', function () {
       console.log('got .dropdown-menu show.bs.dropdown');
-    });    
+    });
     $('.btn-group').on('hide.bs.dropdown', function () {
       console.log('got .dropdown-menu hide.bs.dropdown');
-    });   
-*/  
+    });
+*/
 });
-
-
