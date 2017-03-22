@@ -1,8 +1,7 @@
 from flask import abort, Flask, json, redirect, \
                     render_template, request, Response, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+from jinja2 import Markup
 from werkzeug.utils import secure_filename
 from errors import *
 import os
@@ -25,15 +24,16 @@ DOWNLOAD_FOLDER = 'static/download'
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
-from models import Burial, BurialJSONEncoder, get_burials, get_burial, \
+from models import Burial, BurialImage, BurialJSONEncoder, get_burials, get_burial, \
     add_burial, remove_all_burials, get_burial_images, add_burial_image, \
     set_latlng
 
-class BurialModelView(ModelView):
-    column_searchable_list = (Burial.last_name, Burial.first_name, \
-        Burial.lot_owner, Burial.sd_type, Burial.sd, Burial.lot, Burial.space)
+
+from admin import Admin, BurialModelView, BurialImageModelView
+
 admin = Admin(app, name='cemetery-map', template_mode='bootstrap3')
 admin.add_view(BurialModelView(Burial, db.session))
+admin.add_view(BurialImageModelView(BurialImage, db.session))
 
 
 def randstr():
