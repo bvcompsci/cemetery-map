@@ -27,6 +27,9 @@ pip3 install -r requirements.txt
 python3 manage.py db upgrade
 python3 manage.py runserver
 ```
+If you did not add PostgreSQL's bin directory to your path prior to executing
+the above commands, you will likely see the error `Error: pg_config executable
+not found.`
 
 ## Contributing
 
