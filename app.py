@@ -1,7 +1,6 @@
 from flask import abort, Flask, json, redirect, \
                     render_template, request, Response, url_for
 from flask_sqlalchemy import SQLAlchemy
-from jinja2 import Markup
 from werkzeug.utils import secure_filename
 from errors import *
 import os
@@ -25,8 +24,8 @@ app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
 from models import Burial, BurialImage, BurialJSONEncoder, get_burials, get_burial, \
-    add_burial, remove_all_burials, get_burial_images, add_burial_image, \
-    set_latlng
+    add_burial, remove_all_burials, get_burial_images, get_burial_image, \
+    add_burial_image, set_latlng
 
 
 from admin import Admin, BurialModelView, BurialImageModelView
@@ -105,18 +104,15 @@ def download_image(burial_id, image_id):
     This URL will most likely be specified in HTML as the 'src' attribute
     of an 'img' tag.
     '''
-
     target = app.config['HS_IMAGE_TARGET']
-    burial_images = get_burial_images(burial_id)
-    if target == 'file':
+    bi = get_burial_image(image_id)
+    if bi == None:
+        abort(404)
+    elif target == 'file':
         return redirect( \
-            #os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
-            os.path.join(app.config['UPLOAD_FOLDER'], \
-                         burial_images[image_id].filename), \
-            code=302)
+            os.path.join(app.config['UPLOAD_FOLDER'], bi.filename), code=302)
     elif target == 'db':
-        return app.response_class(burial_images[image_id].data, \
-                                    mimetype='application/octet-stream')
+        return app.response_class(bi.data, mimetype='application/octet-stream')
 
 
 @app.route('/api/headstone/none', methods=['GET'])
@@ -134,9 +130,9 @@ def images_iframe_content(burial_id):
         return '<img style="width: 200px;" src="' \
               + url_for('no_image') \
               + '"><br>'
-    for k in range(len(burial_images)):
+    for bi in burial_images:
         html += '<img style="width: 200px;" src="' \
-              + url_for('download_image', burial_id=burial_id, image_id=k) \
+              + url_for('download_image', burial_id=burial_id, image_id=bi.id) \
               + '"><br>'
     return html
 
