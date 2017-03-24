@@ -96,6 +96,10 @@ def get_burial_images(burial_id):
     return BurialImage.query.filter(BurialImage.burial_id == burial_id).all()
 
 
+def get_burial_image(image_id):
+    return BurialImage.query.filter(BurialImage.id == image_id).first()
+
+
 def add_burial_image(burial_id, filename, data):
     bi = BurialImage()
     bi.burial_id = burial_id

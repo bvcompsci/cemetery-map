@@ -2,8 +2,9 @@ from models import Burial, BurialImage
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.form.upload import FileUploadField
+from jinja2 import Markup
 from wtforms import ValidationError, fields
-from wtforms.validators import required
+#from wtforms.validators import required
 from wtforms.widgets import HTMLString, html_params, FileInput
 
 
@@ -85,9 +86,29 @@ class BurialImageModelView(ModelView):
         mimetype_field='mimetype'
     )}
 
-    def _download_formatter(self, context, model, name):
-        return Markup("<a href='{url}' target='_blank'>Download</a>".format(url=self.get_url('download_image', id=model.id)))
+
+    def _photo_formatter(view, context, burialimage, attr_name):
+        ''' This formatter displays the first ten bytes.
+        '''
+        attr_val = getattr(burialimage, attr_name)
+        return 'NULL' if attr_val == None or \
+                        len(attr_val) == 0 \
+                        else str(attr_val[0:10]) + '...'
+
+    def _download_formatter(self, context, burialimage, attr_name):
+        ''' This formatter displays a download link that can be used to
+            download the image for viewing.
+        '''
+        attr_val = getattr(burialimage, attr_name)
+
+        if attr_val == None or len(attr_val) == 0:
+            return 'NULL'
+
+        return Markup("<a href='{url}' target='_blank'>Download</a>"\
+            .format(url=self.get_url(\
+                'download_image', burial_id=burialimage.burial_id, \
+                                  image_id=burialimage.id)))
 
     column_formatters = {
-        'download': _download_formatter,
+        'data': _download_formatter,
     }
