@@ -84,6 +84,25 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/headstones/<int:burial_id>', methods=['GET'])
+def images_iframe_content(burial_id):
+    '''Returns an HTML snippet containing all headstone images for the given
+       burial_id, or a single 'no image' image if the burial_id has no
+       associated headstone images.  This URL is referenced in static/js/map.js.
+    '''
+    html = ''
+    burial_images = get_burial_images(burial_id)
+    if len(burial_images) == 0:
+        return '<img style="width: 200px;" src="' \
+              + url_for('no_image') \
+              + '"><br>'
+    for bi in burial_images:
+        html += '<img style="width: 200px;" src="' \
+              + url_for('download_image', burial_id=burial_id, image_id=bi.id) \
+              + '"><br>'
+    return html
+
+
 @app.route('/api/search', methods=['GET', 'POST'])
 def search():
     '''Returns a JSON list of matching burials or an error string on failure.
@@ -117,24 +136,12 @@ def download_image(burial_id, image_id):
 
 @app.route('/api/headstone/none', methods=['GET'])
 def no_image():
+    '''URL referenced by images_iframe_content() if a burial has no
+       headstone images associated with it.
+    '''
     return redirect( \
             os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
             code=302)
-
-
-@app.route('/api/headstones/<int:burial_id>', methods=['GET'])
-def images_iframe_content(burial_id):
-    html = ''
-    burial_images = get_burial_images(burial_id)
-    if len(burial_images) == 0:
-        return '<img style="width: 200px;" src="' \
-              + url_for('no_image') \
-              + '"><br>'
-    for bi in burial_images:
-        html += '<img style="width: 200px;" src="' \
-              + url_for('download_image', burial_id=burial_id, image_id=bi.id) \
-              + '"><br>'
-    return html
 
 
 @app.route('/api/headstone/<int:burial_id>', methods=['POST'])
