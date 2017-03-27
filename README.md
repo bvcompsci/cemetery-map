@@ -1,4 +1,4 @@
-![Image sample of cemetery-map Web app](static/images/samples/app-sample.png)
+<img src="static/images/samples/app-sample.png" width="50%">
 
 cemetery-map
 ============
