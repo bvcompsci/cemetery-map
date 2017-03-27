@@ -125,7 +125,7 @@ function openInfowindow(marker) {
                         + 'update our site.  Thank you.');
   } else {
     var content = "<h4>" + marker.first_name + " " + marker.last_name + "</h4>"
-                + "<iframe src=\"/api/headstones/" + marker.id + "\"></iframe>"
+                + "<iframe src=\"/headstones/" + marker.id + "\"></iframe>"
                 + "<br>"
                 + "<strong>Born Date:</strong> " + san(marker.birth_date)
                 + "<br>"
