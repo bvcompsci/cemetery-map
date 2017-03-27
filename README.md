@@ -1,3 +1,5 @@
+<img src="static/images/samples/app-sample.png" width="50%">
+
 cemetery-map
 ============
 The cemetery-map Web application is a responsive Python+Flask+SQLAlchemy+Google
