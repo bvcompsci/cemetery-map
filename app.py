@@ -15,16 +15,17 @@ db = SQLAlchemy(app)
 
 
 UPLOAD_FOLDER = 'static/images/headstone'
-ALLOWED_IMAGE_EXTENSIONS = set(['jpg','gif','png'])
+ALLOWED_IMAGE_EXTENSIONS = set(['jpg', 'gif', 'png'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_DATA_EXTENSIONS = set(['csv','zip'])
+ALLOWED_DATA_EXTENSIONS = set(['csv', 'zip'])
 
 DOWNLOAD_FOLDER = 'static/download'
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
-from models import Burial, BurialImage, BurialJSONEncoder, get_burials, get_burial, \
-    add_burial, remove_all_burials, get_burial_images, get_burial_image, \
+from models import Burial, BurialImage, BurialJSONEncoder, \
+    get_burials, get_burial, add_burial, remove_all_burials, \
+    get_burial_images, get_burial_image, \
     add_burial_image, set_latlng
 
 
@@ -36,8 +37,8 @@ admin.add_view(BurialImageModelView(BurialImage, db.session))
 
 
 def randstr():
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) \
-                for _ in range(30))
+    return ''.join(random.choice(string.ascii_uppercase + string.digits)
+                   for _ in range(30))
 
 
 def allowed_image_file(filename):
@@ -88,7 +89,8 @@ def index():
 def images_iframe_content(burial_id):
     '''Returns an HTML snippet containing all headstone images for the given
        burial_id, or a single 'no image' image if the burial_id has no
-       associated headstone images.  This URL is referenced in static/js/map.js.
+       associated headstone images.  This URL is referenced in
+       static/js/map.js.
     '''
     html = ''
     burial_images = get_burial_images(burial_id)
@@ -125,10 +127,10 @@ def download_image(burial_id, image_id):
     '''
     target = app.config['HS_IMAGE_TARGET']
     bi = get_burial_image(image_id)
-    if bi == None:
+    if bi is None:
         abort(404)
     elif target == 'file':
-        return redirect( \
+        return redirect(
             os.path.join(app.config['UPLOAD_FOLDER'], bi.filename), code=302)
     elif target == 'db':
         return app.response_class(bi.data, mimetype='application/octet-stream')
@@ -139,8 +141,8 @@ def no_image():
     '''URL referenced by images_iframe_content() if a burial has no
        headstone images associated with it.
     '''
-    return redirect( \
-            os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'), \
+    return redirect(
+            os.path.join(app.config['UPLOAD_FOLDER'], 'no-image.png'),
             code=302)
 
 
@@ -172,9 +174,9 @@ def upload_image(burial_id):
             filename = 'hs-' + randstr() + '-' + str(burial_id) + suffix
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-            add_burial_image( \
-                burial_id, \
-                filename if target == 'file' else None, \
+            add_burial_image(
+                burial_id,
+                filename if target == 'file' else None,
                 infile.read() if target == 'db' else None)
 
             if target == 'file':
@@ -206,11 +208,11 @@ def database_download():
     pathname = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
 
     with open(pathname, 'w') as csv_file:
-        csv_file.write( \
+        csv_file.write(
             'id,sd_type,sd,lot,space,lot_owner,year_purch,first_name,' +
             'last_name,sex,birth_date,birth_place,death_date,age,' +
             'death_place,death_cause,burial_date,notes,more_notes,' +
-            'hidden_notes,lat,lng\n' )
+            'hidden_notes,lat,lng\n')
 
         burials = get_burials()
 
@@ -277,8 +279,8 @@ def database_upload():
         remove_all_burials()
 
         import codecs
-        with codecs.open(filename, 'r', encoding='utf-8', \
-            errors='ignore') as csv_file:
+        with codecs.open(filename, 'r', encoding='utf-8',
+                         errors='ignore') as csv_file:
 
             # Assume there's a header line and ignore it.
             lines = csv_file.readlines()[1:]
@@ -288,27 +290,27 @@ def database_upload():
             for line in lines:
                 col_values = split_csv_line(line)
                 add_burial({
-                    'sd_type' : col_values[1],
-                    'sd' : col_values[2],
-                    'lot' : col_values[3],
-                    'space' : col_values[4],
-                    'lot_owner' : col_values[5],
-                    'year_purch' : col_values[6],
-                    'first_name' : col_values[7],
-                    'last_name' : col_values[8],
-                    'sex' : col_values[9],
-                    'birth_date' : col_values[10],
-                    'birth_place' : col_values[11],
-                    'death_date' : col_values[12],
-                    'age' : col_values[13],
-                    'death_place' : col_values[14],
-                    'death_cause' : col_values[15],
-                    'burial_date' : col_values[16],
-                    'notes' : col_values[17],
-                    'more_notes' : col_values[18],
-                    'hidden_notes' : col_values[19],
-                    'lat' : col_values[20],
-                    'lng' : col_values[21],
+                    'sd_type': col_values[1],
+                    'sd': col_values[2],
+                    'lot': col_values[3],
+                    'space': col_values[4],
+                    'lot_owner': col_values[5],
+                    'year_purch': col_values[6],
+                    'first_name': col_values[7],
+                    'last_name': col_values[8],
+                    'sex': col_values[9],
+                    'birth_date': col_values[10],
+                    'birth_place': col_values[11],
+                    'death_date': col_values[12],
+                    'age': col_values[13],
+                    'death_place': col_values[14],
+                    'death_cause': col_values[15],
+                    'burial_date': col_values[16],
+                    'notes': col_values[17],
+                    'more_notes': col_values[18],
+                    'hidden_notes': col_values[19],
+                    'lat': col_values[20],
+                    'lng': col_values[21],
                 })
 
     return 'ok - %d burials loaded' % len(lines)
@@ -325,7 +327,7 @@ def burial_summary():
             first_name: FNAME,
             last_name: LNAME,
             birth_date: BDATE,
-            death_date : DDATE
+            death_date: DDATE
         }
 
     where the CAPS strings represent the actual values returned.  Only actual
@@ -350,8 +352,8 @@ def burial_summary():
                 'death_date': burial.death_date,
             })
 
-        burials_less = sorted( \
-            list(filter(lambda b: b['last_name'] != "", burials_less)), \
+        burials_less = sorted(
+            list(filter(lambda b: b['last_name'] != "", burials_less)),
             key=lambda b: b['last_name'])
 
         js = json.dumps(burials_less, cls=BurialJSONEncoder)
@@ -373,6 +375,7 @@ def update_burial():
 
 
 from models import make_dummy_data
+
 
 @app.route('/api/add-test-latlng', methods=['GET', 'POST'])
 def add_test_data():

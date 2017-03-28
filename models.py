@@ -31,7 +31,6 @@ class Burial(db.Model):
     lat = db.Column(db.Float())
     lng = db.Column(db.Float())
 
-
     def __repr__(self):
         return '<burial id=%d, last_name=%s, first_name=%s ...>' % \
             (self.id, self.last_name, self.first_name)
@@ -42,8 +41,10 @@ class BurialImage(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     burial_id = db.Column(db.Integer, db.ForeignKey('burials.id'))
-    burial = db.relationship('Burial', \
-        backref=db.backref('burial_images', lazy='dynamic'))
+    burial = db.relationship('Burial',
+                             backref=db.backref('burial_images',
+                                                lazy='dynamic'))
+
     # Depending on deployment environment, we may choose to store images in the
     # filesystem or in the DB.  We will maintain columns for both and then rely
     # on the Flask app config object to tell us which we should use.
@@ -118,26 +119,26 @@ def set_latlng(the_id, lat, lng):
 
 def make_dummy_data():
     b = get_burial(1)
-    b.lat=42.634739
-    b.lng=-95.173137
+    b.lat = 42.634739
+    b.lng = -95.173137
     db.session.commit()
 
     b = get_burial(2)
-    b.lat=42.634639
-    b.lng=-95.173237
+    b.lat = 42.634639
+    b.lng = -95.173237
     db.session.commit()
 
     b = get_burial(3)
-    b.lat=42.633739
-    b.lng=-95.175087
+    b.lat = 42.633739
+    b.lng = -95.175087
     db.session.commit()
 
     b = get_burial(1878)
-    b.lat=42.633839
-    b.lng=-95.175187
+    b.lat = 42.633839
+    b.lng = -95.175187
     db.session.commit()
 
     b = get_burial(1879)
-    b.lat=42.633939
-    b.lng=-95.175287
+    b.lat = 42.633939
+    b.lng = -95.175287
     db.session.commit()

@@ -4,7 +4,7 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.form.upload import FileUploadField
 from jinja2 import Markup
 from wtforms import ValidationError, fields
-#from wtforms.validators import required
+# from wtforms.validators import required
 from wtforms.widgets import HTMLString, html_params, FileInput
 
 
@@ -14,14 +14,15 @@ class BlobUploadField(fields.StringField):
 
     widget = FileInput()
 
-    def __init__(self, label=None, allowed_extensions=None, size_field=None, filename_field=None, mimetype_field=None, **kwargs):
+    def __init__(self, label=None, allowed_extensions=None, size_field=None,
+                 filename_field=None, mimetype_field=None, **kwargs):
 
         self.allowed_extensions = allowed_extensions
         self.size_field = size_field
         self.filename_field = filename_field
         self.mimetype_field = mimetype_field
-        #validators = [required()]
-        validators=[]
+        # validators = [required()]
+        validators = []
 
         super(BlobUploadField, self).__init__(label, validators, **kwargs)
 
@@ -44,7 +45,8 @@ class BlobUploadField(fields.StringField):
 
     def pre_validate(self, form):
         super(BlobUploadField, self).pre_validate(form)
-        if self._is_uploaded_file(self.data) and not self.is_file_allowed(self.data.filename):
+        if (self._is_uploaded_file(self.data) and
+                not self.is_file_allowed(self.data.filename)):
             raise ValidationError(gettext('Invalid file extension'))
 
     def process_formdata(self, valuelist):
@@ -73,8 +75,9 @@ class BlobUploadField(fields.StringField):
 
 
 class BurialModelView(ModelView):
-    column_searchable_list = (Burial.last_name, Burial.first_name, \
-        Burial.lot_owner, Burial.sd_type, Burial.sd, Burial.lot, Burial.space)
+    column_searchable_list = (Burial.last_name, Burial.first_name,
+                              Burial.lot_owner, Burial.sd_type,
+                              Burial.sd, Burial.lot, Burial.space)
 
 
 class BurialImageModelView(ModelView):
@@ -86,14 +89,12 @@ class BurialImageModelView(ModelView):
         mimetype_field='mimetype'
     )}
 
-
     def _photo_formatter(view, context, burialimage, attr_name):
         ''' This formatter displays the first ten bytes.
         '''
         attr_val = getattr(burialimage, attr_name)
-        return 'NULL' if attr_val == None or \
-                        len(attr_val) == 0 \
-                        else str(attr_val[0:10]) + '...'
+        return 'NULL' if (attr_val is None or
+                          len(attr_val) == 0) else str(attr_val[0:10]) + '...'
 
     def _download_formatter(self, context, burialimage, attr_name):
         ''' This formatter displays a download link that can be used to
@@ -101,13 +102,13 @@ class BurialImageModelView(ModelView):
         '''
         attr_val = getattr(burialimage, attr_name)
 
-        if attr_val == None or len(attr_val) == 0:
+        if attr_val is None or len(attr_val) == 0:
             return 'NULL'
 
-        return Markup("<a href='{url}' target='_blank'>Download</a>"\
-            .format(url=self.get_url(\
-                'download_image', burial_id=burialimage.burial_id, \
-                                  image_id=burialimage.id)))
+        return Markup("<a href='{url}' target='_blank'>Download</a>"
+                      .format(url=self.get_url('download_image',
+                                               burial_id=burialimage.burial_id,
+                                               image_id=burialimage.id)))
 
     column_formatters = {
         'data': _download_formatter,
