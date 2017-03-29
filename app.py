@@ -82,7 +82,7 @@ def split_csv_line(line):
 def index():
     '''Downloads the initial map page.
     '''
-    return render_template('index.html')
+    return render_template('index.html', maps_key=app.config['MAPS_KEY'])
 
 
 @app.route('/headstones/<int:burial_id>', methods=['GET'])
