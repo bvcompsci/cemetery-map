@@ -7,6 +7,7 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     SECRET_KEY = 'to-be-determined'
+    MAPS_KEY = os.environ['MAPS_KEY']
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
     # HS_IMAGE_TARGET can be set to either 'db' or 'file' depending on
     # where we wish to store images, either a LargeBinary in the database
