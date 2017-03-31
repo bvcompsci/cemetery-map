@@ -106,7 +106,7 @@ def before_request():
             person = plus_service.people().get(userId='me', fields='emails')\
                                           .execute()
             email = person['emails'][0]['value']
-            if email != 'slcemdev@gmail.com':
+            if email not in app.config['GOOGLE_ADMIN_EMAIL_LIST']:
                 abort(403)
 
 
@@ -132,7 +132,8 @@ def oauth2callback():
 def index():
     '''Downloads the initial map page.
     '''
-    return render_template('index.html', maps_key=app.config['GOOGLE_MAPS_KEY'])
+    return render_template('index.html',
+                           maps_key=app.config['GOOGLE_MAPS_KEY'])
 
 
 @app.route('/headstones/<int:burial_id>', methods=['GET'])
@@ -150,8 +151,8 @@ def images_iframe_content(burial_id):
               + '"><br>'
     for bi in burial_images:
         html += '<img style="width: 200px;" src="' \
-              + url_for('download_image', burial_id=burial_id, image_id=bi.id) \
-              + '"><br>'
+             + url_for('download_image', burial_id=burial_id, image_id=bi.id) \
+             + '"><br>'
     return html
 
 
