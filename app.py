@@ -1,11 +1,15 @@
 from flask import abort, Flask, json, redirect, \
-                    render_template, request, Response, url_for
+                    render_template, request, Response, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from errors import *
+from apiclient import discovery
+from oauth2client import client
 import os
 import random
 import string
+import httplib2
+import json
 
 
 app = Flask(__name__)
@@ -78,11 +82,57 @@ def split_csv_line(line):
     return cols
 
 
+@app.before_request
+def before_request():
+    '''Checks for Flask-Admin routes and requires user to authenticate
+       and authorize using OAuth2 through the Google+ API.  If the Google
+       user's email address belongs to a known admin, go ahead and allow
+       access.  Otherwise, emit a 403 Forbidden to the client.
+
+       Prior to using the Google+ API, the Web developer must have used
+       the Google Developer Console (https://console.developers.google.com)
+       to 1.) enable the Google+ API, and 2.) create an OAuth 2 client
+       ID & secret and make them available through app config.
+    '''
+    if request.path.startswith('/admin'):
+        if 'credentials' not in session:
+            return redirect(url_for('oauth2callback'))
+        credentials = client.OAuth2Credentials.from_json(session['credentials'])
+        if credentials.access_token_expired:
+            return redirect(url_for('oauth2callback'))
+        else:
+            http_auth = credentials.authorize(httplib2.Http())
+            plus_service = discovery.build('plus', 'v1', http=http_auth)
+            person = plus_service.people().get(userId='me', fields='emails')\
+                                          .execute()
+            email = person['emails'][0]['value']
+            if email != 'slcemdev@gmail.com':
+                abort(403)
+
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    flow = client.OAuth2WebServerFlow(
+                client_id=app.config['GOOGLE_CLIENT_ID'],
+                client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+                scope='https://www.googleapis.com/auth/plus.login ' +
+                      'https://www.googleapis.com/auth/userinfo.email',
+                redirect_uri=url_for('oauth2callback', _external=True))
+    if 'code' not in request.args:
+        auth_uri = flow.step1_get_authorize_url()
+        return redirect(auth_uri)
+    else:
+        auth_code = request.args.get('code')
+        credentials = flow.step2_exchange(auth_code)
+        session['credentials'] = credentials.to_json()
+        return redirect(url_for('admin.index'))
+
+
 @app.route('/')
 def index():
     '''Downloads the initial map page.
     '''
-    return render_template('index.html', maps_key=app.config['MAPS_KEY'])
+    return render_template('index.html', maps_key=app.config['GOOGLE_MAPS_KEY'])
 
 
 @app.route('/headstones/<int:burial_id>', methods=['GET'])
