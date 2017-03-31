@@ -7,8 +7,10 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     SECRET_KEY = 'to-be-determined'
-    MAPS_KEY = os.environ['MAPS_KEY']
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+    GOOGLE_MAPS_KEY = os.environ['GOOGLE_MAPS_KEY']
+    GOOGLE_CLIENT_ID = os.environ['GOOGLE_CLIENT_ID']
+    GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
     # HS_IMAGE_TARGET can be set to either 'db' or 'file' depending on
     # where we wish to store images, either a LargeBinary in the database
     # or in the filesystem.
