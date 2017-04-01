@@ -82,9 +82,16 @@ def split_csv_line(line):
     return cols
 
 
+def is_secure_path(request_path):
+    '''Determines whether the requested URL path should require secure access
+       through Google+ OAuth2.
+    '''
+    return request_path.startswith('/admin') or request_path == '/api/data'
+
+
 @app.before_request
 def before_request():
-    '''Checks for Flask-Admin routes and requires user to authenticate
+    '''Checks whether requested URL path requires the user to authenticate
        and authorize using OAuth2 through the Google+ API.  If the Google
        user's email address belongs to a known admin, go ahead and allow
        access.  Otherwise, emit a 403 Forbidden to the client.
@@ -94,7 +101,7 @@ def before_request():
        to 1.) enable the Google+ API, and 2.) create an OAuth 2 client
        ID & secret and make them available through app config.
     '''
-    if request.path.startswith('/admin'):
+    if is_secure_path(request.path):
         if 'credentials' not in session:
             return redirect(url_for('oauth2callback'))
         credentials = client.OAuth2Credentials.from_json(session['credentials'])
@@ -167,6 +174,7 @@ def search():
         resp = Response(js, status=200, mimetype='application/json')
         return resp
     except Exception as e:
+        print('Error: {}'.format(str(e)))
         return ERR_GENERAL
 
 
