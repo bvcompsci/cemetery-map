@@ -379,6 +379,11 @@ def database_upload():
 
 @app.route('/api/data/headstones', methods=['GET'])
 def download_images():
+    '''Retrieves a ZIP file containing all headstone images in the database.
+       This REST endpoint accomplishes this by staging the image files into a
+       directory, ZIP'ing the stagign directory into a ZIP file, removing the
+       staging directory, and then finally redirecting to the ZIP file.
+    '''
     if not os.path.isdir(app.config['DOWNLOAD_FOLDER']):
         os.mkdir(app.config['DOWNLOAD_FOLDER'])
 
