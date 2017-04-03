@@ -93,7 +93,10 @@ def remove_all_burials():
     db.engine.execute('alter sequence burial_images_id_seq RESTART with 1')
 
 
-def get_burial_images(burial_id):
+def get_burial_images(burial_id=None):
+    if burial_id is None:
+        return BurialImage.query.all()
+
     return BurialImage.query.filter(BurialImage.burial_id == burial_id).all()
 
 
