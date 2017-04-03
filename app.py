@@ -5,11 +5,14 @@ from werkzeug.utils import secure_filename
 from errors import *
 from apiclient import discovery
 from oauth2client import client
+from time import gmtime, strftime
 import os
 import random
 import string
 import httplib2
 import json
+import shutil
+import zipfile
 
 
 app = Flask(__name__)
@@ -262,7 +265,6 @@ def database_download():
     if not os.path.isdir(app.config['DOWNLOAD_FOLDER']):
         os.mkdir(app.config['DOWNLOAD_FOLDER'])
 
-    from time import gmtime, strftime
     filename = 'cemdb-'+strftime('%Y%m%d-%H%M%S', gmtime())+'.csv'
     pathname = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
 
@@ -373,6 +375,37 @@ def database_upload():
                 })
 
     return 'ok - %d burials loaded' % len(lines)
+
+
+@app.route('/api/data/headstones', methods=['GET'])
+def download_images():
+    if not os.path.isdir(app.config['DOWNLOAD_FOLDER']):
+        os.mkdir(app.config['DOWNLOAD_FOLDER'])
+
+    imgdirname = 'headstones-' + strftime('%Y%m%d-%H%M%S', gmtime())
+    imgdirpath = os.path.join(app.config['DOWNLOAD_FOLDER'], imgdirname)
+    os.mkdir(imgdirpath)
+
+    target = app.config['HS_IMAGE_TARGET']
+    bis = get_burial_images()
+    for bi in bis:
+        if target == 'file':
+            srcpath = os.path.join(app.config['UPLOAD_FOLDER'], bi.filename)
+            destpath = os.path.join(imgdirpath, bi.filename)
+            shutil.copyfile(srcpath, destpath)
+        elif target == 'db':
+            destpath = os.path.join(imgdirpath, str(bi.id))
+            with open(destpath, 'wb') as imgf:
+                imgf.write(bi.data)
+
+    zippath = imgdirpath + '.zip'
+    zipf = zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(imgdirpath):
+        for f in files:
+            zipf.write(os.path.join(root, f))
+
+    shutil.rmtree(imgdirpath)
+    return redirect(zippath, code=302)
 
 
 @app.route('/api/burial-summary', methods=['GET'])
