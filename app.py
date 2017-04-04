@@ -89,7 +89,8 @@ def is_secure_path(request_path):
     '''Determines whether the requested URL path should require secure access
        through Google+ OAuth2.
     '''
-    return request_path.startswith('/admin') or request_path == '/api/data'
+    return request_path.startswith('/admin') or request_path == '/api/data' \
+            or request_path == '/api/add-test-latlng'
 
 
 @app.before_request
