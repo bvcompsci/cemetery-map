@@ -209,6 +209,21 @@ def no_image():
             code=302)
 
 
+@app.route('/api/headstones/<int:burial_id>', methods=['GET'])
+def get_headstone_ids(burial_id):
+    '''Returns a JSON list of BurialImage ID's for the specified Burial ID.
+    '''
+    try:
+        bis = get_burial_images(burial_id)
+        bids = [bi.id for bi in bis]
+        js = json.dumps(bids)
+        resp = Response(js, status=200, mimetype='application/json')
+        return resp
+    except Exception as e:
+        print('Error: {}'.format(str(e)))
+        return ERR_GENERAL
+
+
 @app.route('/api/headstone/<int:burial_id>', methods=['POST'])
 def upload_image(burial_id):
     '''Given an HTML form with enctype=multipart/form-data and an input
